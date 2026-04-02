@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Generate Card</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.container{width:100%;max-width:860px}
+.panel{background:#fff;border-radius:12px;padding:32px 36px;margin-bottom:20px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.panel h2{font-size:20px;color:#333;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #667eea}
+.form-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.form-item{display:flex;align-items:center;gap:6px}
+.form-item label{font-size:14px;color:#555;white-space:nowrap;font-weight:500}
+input,select{height:38px;border:1px solid #d0d5dd;border-radius:6px;padding:0 12px;font-size:14px;outline:none;transition:border .2s}
+input:focus,select:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+#cardBin{width:180px}
+#count{width:80px}
+#digit{width:80px;cursor:pointer}
+#langSel{width:110px;cursor:pointer}
+#verifyNum{width:260px}
+textarea{width:100%;height:220px;border:1px solid #d0d5dd;border-radius:6px;padding:12px;font-size:14px;font-family:'SF Mono',Consolas,monospace;outline:none;resize:vertical;transition:border .2s}
+textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+button{height:38px;padding:0 28px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.check-label{display:flex;align-items:center;gap:4px;font-size:13px;color:#666;cursor:pointer;user-select:none}
+.check-label input{width:auto;height:auto}
+.msg{margin-top:4px;margin-bottom:8px;font-size:15px;min-height:20px}
+.msg.ok{color:#16b777}.msg.err{color:#ff5722}
+.result-label{font-size:14px;color:#555;font-weight:500;margin-bottom:8px;display:block}
+.lang-bar{text-align:right;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="lang-bar">
+    <select id="langSel" onchange="setLang(this.value)">
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁體中文</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+  <div class="panel">
+    <h2 data-i="genTitle"></h2>
+    <div class="form-row">
+      <div class="form-item"><label data-i="cardBin"></label><input type="text" id="cardBin" data-ip="phCardBin"></div>
+      <div class="form-item"><label data-i="quantity"></label><input type="text" id="count" value="1"></div>
+      <div class="form-item"><label data-i="digits"></label>
+        <select id="digit"><option value="15">15</option><option value="16" selected>16</option><option value="19">19</option></select>
+      </div>
+      <button class="btn-primary" onclick="generate()" data-i="btnGen"></button>
+      <label class="check-label"><input type="checkbox" id="useSep"> <span data-i="sepLabel"></span></label>
+    </div>
+    <div id="genMsg" class="msg"></div>
+    <span class="result-label" data-i="result"></span>
+    <textarea id="result" data-ip="phResult"></textarea>
+  </div>
+  <div class="panel">
+    <h2 data-i="verifyTitle"></h2>
+    <div class="form-row">
+      <div class="form-item"><label data-i="cardNo"></label><input type="text" id="verifyNum" data-ip="phCardNo"></div>
+      <button class="btn-primary" onclick="verify()" data-i="btnVerify"></button>
+    </div>
+    <div id="verifyMsg" class="msg"></div>
+  </div>
+</div>
+<script>
+const I18N={
+  'zh-CN':{genTitle:'生成卡号',cardBin:'CardBin',quantity:'数量',digits:'位数',btnGen:'生 成',sepLabel:'用 - 分隔',result:'结果',phResult:'生成的卡号将显示在这里',phCardBin:'输入卡BIN',verifyTitle:'验证卡号',cardNo:'卡号',phCardNo:'输入待验证的卡号',btnVerify:'验 证',
+    errBin:'请输入有效的CardBin（纯数字）',errCount:'数量请输入1-100000的整数',errLen:'CardBin长度需小于位数',generated:'已生成 {n} 个卡号',errEmpty:'请输入验证卡号',validOk:'验证卡号成功 ✓',validFail:'无效卡号 ✗'},
+  'zh-TW':{genTitle:'產生卡號',cardBin:'CardBin',quantity:'數量',digits:'位數',btnGen:'產 生',sepLabel:'用 - 分隔',result:'結果',phResult:'產生的卡號將顯示在這裡',phCardBin:'輸入卡BIN',verifyTitle:'驗證卡號',cardNo:'卡號',phCardNo:'輸入待驗證的卡號',btnVerify:'驗 證',
+    errBin:'請輸入有效的CardBin（純數字）',errCount:'數量請輸入1-100000的整數',errLen:'CardBin長度需小於位數',generated:'已產生 {n} 個卡號',errEmpty:'請輸入驗證卡號',validOk:'驗證卡號成功 ✓',validFail:'無效卡號 ✗'},
+  'en':{genTitle:'Generate Card',cardBin:'CardBin',quantity:'Count',digits:'Digits',btnGen:'Generate',sepLabel:'Separate with -',result:'Result',phResult:'Generated card numbers will appear here',phCardBin:'Enter card BIN',verifyTitle:'Verify Card',cardNo:'Card No.',phCardNo:'Enter card number to verify',btnVerify:'Verify',
+    errBin:'Please enter a valid CardBin (digits only)',errCount:'Count must be 1-100000',errLen:'CardBin length must be less than digits',generated:'{n} card(s) generated',errEmpty:'Please enter a card number',validOk:'Valid card number ✓',validFail:'Invalid card number ✗'}
+};
+let curLang='zh-CN';
+function t(key){return I18N[curLang][key]||key;}
+function setLang(lang){
+  curLang=lang;
+  document.getElementById('langSel').value=lang;
+  document.querySelectorAll('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));
+  document.querySelectorAll('[data-ip]').forEach(el=>el.placeholder=t(el.dataset.ip));
+}
+// auto detect
+(function(){
+  const lang=navigator.language||'zh-CN';
+  if(lang.startsWith('zh-TW')||lang.startsWith('zh-HK'))setLang('zh-TW');
+  else if(lang.startsWith('zh'))setLang('zh-CN');
+  else setLang('en');
+})();
+
+function luhnCheck(num){
+  let n=0,even=false;
+  for(let i=num.length-1;i>=0;i--){let d=parseInt(num[i]);if(even&&(d*=2)>9)d-=9;n+=d;even=!even;}
+  return n%10===0;
+}
+function luhnCheckDigit(cardBin){
+  let n=0,len=cardBin.length;
+  for(let j=len;j>0;j--){let d=parseInt(cardBin[j-1]);if((len-j)%2===0){d*=2;if(d>9)d=Math.floor(d/10)+d%10;}n+=d;}
+  return (10-n%10)%10;
+}
+function randDigits(c){let r='';for(let i=0;i<c;i++)r+=Math.floor(Math.random()*10);return r;}
+function showMsg(id,text,ok){const el=document.getElementById(id);el.textContent=text;el.className='msg '+(ok?'ok':'err');}
+function generate(){
+  const bin=document.getElementById('cardBin').value.trim();
+  const digit=parseInt(document.getElementById('digit').value);
+  const countVal=document.getElementById('count').value.trim();
+  if(!/^\d+$/.test(countVal)){showMsg('genMsg',t('errCount'),false);return;}
+  const count=parseInt(countVal);
+  if(!bin||!/^\d+$/.test(bin)){showMsg('genMsg',t('errBin'),false);return;}
+  if(!count||count<1||count>100000){showMsg('genMsg',t('errCount'),false);return;}
+  if(bin.length>=digit){showMsg('genMsg',t('errLen'),false);return;}
+  const fill=digit-bin.length-1,cards=[];
+  for(let i=0;i<count;i++){const body=bin+randDigits(fill);cards.push(body+luhnCheckDigit(body));}
+  window._cards=cards;
+  renderResult();
+  showMsg('genMsg',t('generated').replace('{n}',count),true);
+}
+function renderResult(){
+  if(!window._cards)return;
+  const sep=document.getElementById('useSep').checked;
+  document.getElementById('result').value=window._cards.map(c=>sep?c.replace(/(.{4})/g,'$1-').replace(/-$/,''):c).join('\n');
+}
+document.getElementById('useSep').addEventListener('change',renderResult);
+function verify(){
+  const num=document.getElementById('verifyNum').value.replace(/[\s-]/g,'');
+  if(!num){showMsg('verifyMsg',t('errEmpty'),false);return;}
+  showMsg('verifyMsg',luhnCheck(num)?t('validOk'):t('validFail'),luhnCheck(num));
+}
+</script>
+</body>
+</html>
