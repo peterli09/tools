@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Generate Card</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -9,7 +10,7 @@ body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:fle
 .container{width:100%;max-width:860px}
 .panel{background:#fff;border-radius:12px;padding:32px 36px;margin-bottom:20px;box-shadow:0 8px 30px rgba(0,0,0,.15)}
 .panel h2{font-size:20px;color:#333;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #667eea}
-.form-row{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.form-row{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
 .form-item{display:flex;align-items:center;gap:6px}
 .form-item label{font-size:14px;color:#555;white-space:nowrap;font-weight:500}
 input,select{height:38px;border:1px solid #d0d5dd;border-radius:6px;padding:0 12px;font-size:14px;outline:none;transition:border .2s}
@@ -30,6 +31,13 @@ button{height:38px;padding:0 28px;border:none;border-radius:6px;font-size:14px;f
 .msg.ok{color:#16b777}.msg.err{color:#ff5722}
 .result-label{font-size:14px;color:#555;font-weight:500;margin-bottom:8px;display:block}
 .lang-bar{text-align:right;margin-bottom:10px}
+@media(max-width:600px){
+  .panel{padding:20px 16px}
+  .form-row{gap:10px}
+  .form-item{flex:1 1 auto}
+  #cardBin,#verifyNum{width:100%}
+  input,select,button{width:100%}
+}
 </style>
 </head>
 <body>
